@@ -239,39 +239,80 @@ export default function Home() {
         {results && (
           <div className="max-w-xl mx-auto mb-10">
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-emerald-400 text-lg">✈️</span>
-                <span className="text-sm font-medium text-emerald-400">
-                  Results ready
-                </span>
-              </div>
-              {results.google_flights_url && (
-                <a
-                  href={results.google_flights_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-emerald-300 hover:text-emerald-200 transition-colors"
-                >
-                  Open Google Flights →{" "}
-                  <span className="text-zinc-500 text-xs">
-                    {results.google_flights_url.slice(0, 60)}...
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 text-lg">✈️</span>
+                  <span className="text-sm font-medium text-emerald-400">
+                    {results.flights?.length > 0
+                      ? `${results.flights.length} flights found`
+                      : "Results"}
                   </span>
-                </a>
-              )}
-              {results.flights && results.flights.length > 0 && (
-                <div className="mt-3 space-y-2">
+                </div>
+                {results.google_flights_url && (
+                  <a
+                    href={results.google_flights_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-emerald-500 hover:text-emerald-400 transition-colors"
+                  >
+                    Open in Google Flights ↗
+                  </a>
+                )}
+              </div>
+
+              {results.flights && results.flights.length > 0 ? (
+                <div className="space-y-2">
                   {results.flights.map((f: any, i: number) => (
-                    <div
+                    <a
                       key={i}
-                      className="bg-zinc-800/50 rounded-lg px-3 py-2 text-xs text-zinc-300"
+                      href={results.google_flights_url || f.book_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-zinc-800/50 hover:bg-zinc-800 rounded-lg px-3.5 py-3 transition-colors border border-transparent hover:border-zinc-700"
                     >
-                      {f.summary?.slice(0, 200) || f.price || `Flight ${i + 1}`}
-                    </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-zinc-200 truncate">
+                            {f.airline}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-zinc-400">
+                            <span>{f.departure}</span>
+                            <span className="text-zinc-600">→</span>
+                            <span>{f.route}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-zinc-500">{f.duration}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-400">
+                              {f.stops}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-3 shrink-0">
+                          <div className="text-sm font-bold text-emerald-400">
+                            {f.price}
+                          </div>
+                          <div className="text-[10px] text-zinc-500">round trip</div>
+                        </div>
+                      </div>
+                    </a>
                   ))}
                 </div>
-              )}
-              {results.note && (
-                <p className="text-xs text-zinc-500 mt-2">{results.note}</p>
+              ) : (
+                <>
+                  {results.google_flights_url && (
+                    <a
+                      href={results.google_flights_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-emerald-300 hover:text-emerald-200 transition-colors"
+                    >
+                      Open Google Flights →
+                    </a>
+                  )}
+                  {results.note && (
+                    <p className="text-xs text-zinc-500 mt-2">{results.note}</p>
+                  )}
+                </>
               )}
             </div>
           </div>
