@@ -3,237 +3,327 @@
 import { useState } from "react";
 
 const HACKS = [
-  {
-    id: 1,
-    title: "Date Grid / Flexible Dates",
-    emoji: "📅",
-    what: "Google Flights shows a calendar of prices. Shifting by ±1-3 days often drops the price 20-40%.",
-    how: "After searching, click the departure date → 2-month calendar appears with prices on each date. Pick the cheapest combo.",
-    best: "Any route with flexible dates.",
-    risk: null,
-  },
-  {
-    id: 2,
-    title: "Hidden City Ticketing (Skiplagged)",
-    emoji: "🎭",
-    what: "Book a flight with a layover at your actual destination. Don't take the final leg.",
-    how: "Search flights to major hubs that connect through your destination. Example: Toronto→London cheaper as Toronto→Paris with London layover. Use skiplagged.com.",
-    best: "Flights to major hub cities.",
-    risk: "Don't check bags. Airlines may cancel return flights. Don't attach frequent flyer number. Carry-on only.",
-  },
-  {
-    id: 3,
-    title: "Nearby Airports",
-    emoji: "🏙️",
-    what: "Check all airports within 2-3 hours drive. Savings often worth the drive.",
-    how: "Use Google Flights '+' to add airports. Example: YYZ+YKF+BUF+YHM → LON+LGW+STN+LTN.",
-    best: "Toronto (check BUF, YKF, YHM, YTZ). Vancouver (check SEA, BLI). Montreal (check YUL, YOW).",
-    risk: null,
-  },
-  {
-    id: 4,
-    title: "VPN / Country Pricing",
-    emoji: "🌍",
-    what: "Airlines show different prices based on your location. Booking from cheaper country saves 10-30%.",
-    how: "Search from airline's home country. Air India from India VPN, Emirates from UAE VPN. Check both airline's local site and aggregators.",
-    best: "International flights on non-North American airlines.",
-    risk: null,
-  },
-  {
-    id: 5,
-    title: "One-Way Mix-and-Match",
-    emoji: "🔀",
-    what: "Two one-way tickets on different airlines often cheaper than round-trip.",
-    how: "Search each direction separately. Compare one-way outbound + one-way return vs round-trip price.",
-    best: "Routes with lots of airline competition.",
-    risk: null,
-  },
-  {
-    id: 6,
-    title: "Error Fares",
-    emoji: "⚠️",
-    what: "Airlines occasionally publish wrong prices — $200 Europe, $50 domestic. Usually honored for 24-48h.",
-    how: "Check SecretFlying.com, TheFlightDeal.com, Scott's Cheap Flights. Book first — free 24h cancellation on most airlines.",
-    best: "Flexible travelers: time flexibility, not destination constraints.",
-    risk: null,
-  },
-  {
-    id: 7,
-    title: "Points / Miles Sweet Spots",
-    emoji: "✨",
-    what: "Certain routes have disproportionately low award pricing. 12,500 Aeroplan points for short-haul NA.",
-    how: "Check award availability before searching cash. Use points for expensive cash routes, cash for cheap routes.",
-    best: "Routes <500 miles (Aeroplan sweet spot), partner airline redemptions.",
-    risk: null,
-  },
-  {
-    id: 8,
-    title: "Student & Youth Fares",
-    emoji: "🎓",
-    what: "Many airlines offer unadvertised student/youth discounts.",
-    how: "Search StudentUniverse.com for under-26 fares. Check airline student programs directly.",
-    best: "Under 26 or full-time students of any age.",
-    risk: null,
-  },
-  {
-    id: 9,
-    title: "Incognito / Clear Cookies",
-    emoji: "🕶️",
-    what: "Airlines and OTAs track searches and may increase prices on repeated route searches.",
-    how: "Always search flights in incognito/private mode. Clear cookies between searches.",
-    best: "Any route when comparing multiple times.",
-    risk: null,
-  },
-  {
-    id: 10,
-    title: "Book on the Right Day",
-    emoji: "📆",
-    what: "Tuesday at 3pm is mostly myth, but Sunday bookings often slightly cheaper for domestic flights.",
-    how: "Trust Google Flights 'price is typical/low/high' indicator over day-of-week rules. Set price alerts.",
-    best: "Domestic routes with flexible dates.",
-    risk: null,
-  },
+  { id: 1, emoji: "📅", title: "Date Grid", what: "Shift ±1-3 days. Often saves 20-40%. Click date on Google Flights to see price calendar." },
+  { id: 2, emoji: "🎭", title: "Hidden City", what: "Book to a further city with layover at your real destination. Use skiplagged.com.", risk: "No checked bags. Don't attach FF number." },
+  { id: 3, emoji: "🏙️", title: "Nearby Airports", what: "Check all airports within 2-3h drive. YYZ+YKF+BUF+YHM." },
+  { id: 4, emoji: "🌍", title: "VPN Pricing", what: "Book from airline's home country. 10-30% cheaper for international flights." },
+  { id: 5, emoji: "🔀", title: "Mix & Match", what: "Two one-way tickets on different airlines often cheaper than round-trip." },
+  { id: 6, emoji: "⚠️", title: "Error Fares", what: "Check SecretFlying.com, TheFlightDeal.com. Book fast — free 24h cancellation." },
+  { id: 7, emoji: "✨", title: "Points Sweet Spots", what: "12,500 Aeroplan points for short-haul NA. Use points for expensive cash routes." },
+  { id: 8, emoji: "🕶️", title: "Incognito Mode", what: "Always search flights in private/incognito. Clear cookies between searches." },
 ];
 
 export default function Home() {
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [origin, setOrigin] = useState("");
+  const [dest, setDest] = useState("");
+  const [depDate, setDepDate] = useState("");
+  const [retDate, setRetDate] = useState("");
+  const [tripType, setTripType] = useState("roundtrip");
+  const [adults, setAdults] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<any>(null);
+  const [error, setError] = useState("");
 
-  const filtered = HACKS.filter(
-    (h) =>
-      h.title.toLowerCase().includes(search.toLowerCase()) ||
-      h.what.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!origin || !dest || !depDate) {
+      setError("Fill in origin, destination, and departure date.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    setResults(null);
+
+    // Build Google Flights URL
+    const gfOrigin = origin.toUpperCase().trim();
+    const gfDest = dest.toUpperCase().trim();
+    let gfUrl = `https://www.google.com/travel/flights?q=Flights+to+${gfDest}+from+${gfOrigin}+on+${depDate}`;
+    if (tripType === "roundtrip" && retDate) {
+      gfUrl += `+return+${retDate}`;
+    } else {
+      gfUrl += "&tt=o";
+    }
+
+    // Open Google Flights in new tab
+    window.open(gfUrl, "_blank");
+
+    // Try backend
+    try {
+      const resp = await fetch("https://flighthacks.trustdebt.dev/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: gfOrigin,
+          dest: gfDest,
+          depDate,
+          retDate: tripType === "roundtrip" ? retDate : undefined,
+          adults,
+          tripType,
+        }),
+      });
+      const data = await resp.json();
+      setResults(data);
+    } catch {
+      setResults({
+        success: true,
+        google_flights_url: gfUrl,
+        source: "url_only",
+        note: "Google Flights opened in a new tab. Backend coming soon.",
+      });
+    }
+    setLoading(false);
+  };
+
+  // Quick airport codes
+  const popularAirports = ["YYZ", "YVR", "YUL", "YYC", "LON", "NYC", "PAR", "DXB", "DEL", "BKK", "NRT", "SYD", "MIA", "LAX"];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="max-w-3xl mx-auto px-4 py-12 sm:py-20">
+      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
             Flight<span className="text-emerald-400">Hacks</span>
           </h1>
-          <p className="text-zinc-400 text-sm sm:text-base max-w-md mx-auto">
-            10 battle-tested ways to find cheaper flights. Internal tool — use with your AI agent.
-          </p>
+          <p className="text-zinc-400 text-sm">Find cheaper flights. Internal tool.</p>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-8">
-          <input
-            type="text"
-            placeholder="Search hacks (e.g., hidden city, VPN, error fares)..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors"
-          />
-          {search && (
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
-              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
+        {/* Search Form */}
+        <form onSubmit={handleSearch} className="max-w-xl mx-auto mb-10">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
+            {/* Trip Type */}
+            <div className="flex gap-2 bg-zinc-800/50 rounded-lg p-1">
+              {["roundtrip", "oneway"].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTripType(t)}
+                  className={`flex-1 py-2 text-sm rounded-md font-medium transition-colors ${
+                    tripType === t
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  {t === "roundtrip" ? "Round Trip" : "One Way"}
+                </button>
+              ))}
+            </div>
 
-        {/* Quick link to Google Flights */}
-        <a
-          href="https://www.google.com/travel/flights"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full text-center px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-colors mb-8"
-        >
-          🔍 Open Google Flights
-        </a>
+            {/* From / To */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1">
+                  From
+                </label>
+                <input
+                  type="text"
+                  value={origin}
+                  onChange={(e) => setOrigin(e.target.value.toUpperCase())}
+                  placeholder="YYZ"
+                  maxLength={4}
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 uppercase"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1">
+                  To
+                </label>
+                <input
+                  type="text"
+                  value={dest}
+                  onChange={(e) => setDest(e.target.value.toUpperCase())}
+                  placeholder="LON"
+                  maxLength={4}
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 uppercase"
+                />
+              </div>
+            </div>
 
-        {/* Hack cards */}
-        <div className="space-y-3">
-          {filtered.map((hack) => (
-            <div
-              key={hack.id}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 transition-colors overflow-hidden"
-            >
-              <button
-                onClick={() => setExpanded(expanded === hack.id ? null : hack.id)}
-                className="w-full text-left px-5 py-4 flex items-start gap-4"
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1">
+                  Departure
+                </label>
+                <input
+                  type="date"
+                  value={depDate}
+                  onChange={(e) => setDepDate(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1">
+                  {tripType === "roundtrip" ? "Return" : "Return (optional)"}
+                </label>
+                <input
+                  type="date"
+                  value={retDate}
+                  onChange={(e) => setRetDate(e.target.value)}
+                  disabled={tripType === "oneway"}
+                  className={`w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 ${
+                    tripType === "oneway" ? "opacity-40 cursor-not-allowed" : ""
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Passengers */}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1">
+                Passengers
+              </label>
+              <select
+                value={adults}
+                onChange={(e) => setAdults(Number(e.target.value))}
+                className="w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50"
               >
-                <span className="text-2xl shrink-0 mt-0.5">{hack.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-zinc-200">
-                      {hack.title}
-                    </span>
-                    {hack.risk && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        risk
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-1 line-clamp-2">
-                    {hack.what}
-                  </p>
-                </div>
-                <span className="shrink-0 text-zinc-500 text-sm mt-0.5">
-                  {expanded === hack.id ? "−" : "+"}
-                </span>
-              </button>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} adult{n > 1 ? "s" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {expanded === hack.id && (
-                <div className="px-5 pb-5 space-y-3 border-t border-zinc-800/50 pt-4">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                      What
-                    </span>
-                    <p className="text-sm text-zinc-300 mt-1">{hack.what}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                      How
-                    </span>
-                    <p className="text-sm text-zinc-300 mt-1">{hack.how}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                      Best for
-                    </span>
-                    <p className="text-sm text-zinc-300 mt-1">{hack.best}</p>
-                  </div>
-                  {hack.risk && (
-                    <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2">
-                      <span className="text-[10px] uppercase tracking-wider text-amber-400 font-medium">
-                        ⚠️ Risk
-                      </span>
-                      <p className="text-xs text-amber-300/80 mt-1">
-                        {hack.risk}
-                      </p>
+            {/* Quick Airport Codes */}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1.5">
+                Quick codes
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {popularAirports.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => {
+                      if (!origin) setOrigin(code);
+                      else if (!dest) setDest(code);
+                    }}
+                    className="px-2 py-1 text-[10px] rounded-md bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors font-mono"
+                  >
+                    {code}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="text-xs text-red-400 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-emerald-500 text-black font-semibold text-sm hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⏳</span> Searching...
+                </span>
+              ) : (
+                "🔍 Search Flights"
+              )}
+            </button>
+            <p className="text-[10px] text-zinc-600 text-center">
+              Opens Google Flights in a new tab with your search
+            </p>
+          </div>
+        </form>
+
+        {/* Results */}
+        {results && (
+          <div className="max-w-xl mx-auto mb-10">
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-emerald-400 text-lg">✈️</span>
+                <span className="text-sm font-medium text-emerald-400">
+                  Results ready
+                </span>
+              </div>
+              {results.google_flights_url && (
+                <a
+                  href={results.google_flights_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-emerald-300 hover:text-emerald-200 transition-colors"
+                >
+                  Open Google Flights →{" "}
+                  <span className="text-zinc-500 text-xs">
+                    {results.google_flights_url.slice(0, 60)}...
+                  </span>
+                </a>
+              )}
+              {results.flights && results.flights.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {results.flights.map((f: any, i: number) => (
+                    <div
+                      key={i}
+                      className="bg-zinc-800/50 rounded-lg px-3 py-2 text-xs text-zinc-300"
+                    >
+                      {f.summary?.slice(0, 200) || f.price || `Flight ${i + 1}`}
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
+              {results.note && (
+                <p className="text-xs text-zinc-500 mt-2">{results.note}</p>
+              )}
             </div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <p className="text-center text-zinc-500 text-sm py-8">
-            No hacks match "{search}"
-          </p>
+          </div>
         )}
 
+        {/* Hacks Reference */}
+        <div className="max-w-xl mx-auto">
+          <h2 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+            <span>💡</span> Flight Hacks
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {HACKS.map((hack) => (
+              <div
+                key={hack.id}
+                className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 hover:border-zinc-700 transition-colors"
+              >
+                <div className="flex items-start gap-2">
+                  <span className="text-lg shrink-0">{hack.emoji}</span>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-zinc-300">
+                        {hack.title}
+                      </span>
+                      {hack.risk && (
+                        <span className="text-[9px] px-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          ⚠️
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                      {hack.what}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-zinc-800 text-center">
+        <div className="mt-12 pt-8 border-t border-zinc-800 text-center">
           <p className="text-xs text-zinc-500">
-            FlightHacks — Internal tool · Use with Hermes Agent{" "}
-            <code className="text-zinc-600 bg-zinc-900 px-1 py-0.5 rounded text-[11px]">
-              /skill cheap-flights
-            </code>
+            FlightHacks · Internal ·{" "}
+            <a
+              href="https://www.google.com/travel/flights"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              Google Flights ↗
+            </a>
           </p>
-          <a
-            href="https://www.google.com/travel/flights"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors mt-1 inline-block"
-          >
-            Google Flights ↗
-          </a>
         </div>
       </div>
     </div>
